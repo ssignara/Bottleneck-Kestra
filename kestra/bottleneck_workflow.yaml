@@ -1,0 +1,53 @@
+id: bottleneck_pipeline
+namespace: openclassrooms.projet10
+
+description: Pipeline BottleNeck - nettoyage, fusion, calcul du chiffre d'affaires, segmentation et tests qualité avec Docker Compose.
+
+triggers:
+  - id: monthly_schedule
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 9 15 * *"
+    timezone: Europe/Paris
+
+tasks:
+  - id: prepare_environment
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - cd /app/project
+      - pip install pandas openpyxl xlsxwriter
+      - docker rm -f bottleneck_run || true
+      - docker compose down --remove-orphans || true
+
+  - id: run_pipeline
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - cd /app/project
+      - docker compose up --build --abort-on-container-exit
+
+  - id: run_quality_tests
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - cd /app/project
+      - echo "Les tests qualité ont été exécutés dans le conteneur Docker."
+
+  - id: cleanup_environment
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - cd /app/project
+      - docker compose down --remove-orphans
+
+errors:
+  - id: error_message
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - echo "Erreur détectée dans le pipeline BottleNeck. Vérifier les logs Kestra et Docker Compose."

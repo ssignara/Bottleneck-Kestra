@@ -1,0 +1,8 @@
+services:
+  bottleneck_run:
+    build: .
+    container_name: bottleneck_run
+    command: >
+      sh -c "python scripts/run_duckdb_pipeline.py &&
+             python tests/test_quality.py"
+             
